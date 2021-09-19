@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 
 import rospy
-from actionlib.action_client import ActionClient
+from actionlib.action_client import ActionClient, GoalID
 from sensor_msgs.msg import Joy
 from cras_joy_tools.history_joystick import HistoryJoystick
 from relative_positional_controller.msg import RelativeMoveActionGoal, RelativeMoveAction
+
+
+g_goal_id = 0
+
+
+def generate_id():
+    global g_goal_id
+    id, g_goal_id = g_goal_id, g_goal_id + 1
+    now = rospy.Time.now()
+    return GoalID(id="%s-%i-%.3f" % (rospy.get_caller_id(), id, now.to_sec()), stamp=now)
 
 
 def cb(joy_msg):
@@ -18,14 +28,15 @@ def cb(joy_msg):
 
         slow = joy.is_down(deadman_slow)
         goal = RelativeMoveActionGoal()
-        goal.header.stamp = rospy.Time.now()
-        goal.target_x_change = joy.axes[axis_linear] * (lin_dist_slow if slow else lin_dist_fast)
-        goal.linear_speed = lin_vel_slow if slow else lin_vel_fast
+        goal.goal.header.stamp = rospy.Time.now()
+        goal.goal_id = generate_id()
+        goal.goal.target_x_change = joy.axes[axis_linear] * (lin_dist_slow if slow else lin_dist_fast)
+        goal.goal.linear_speed = lin_vel_slow if slow else lin_vel_fast
 
-        rospy.loginfo("Executing relative positional command [" + str(goal.target_x_change) + ", " + str(goal.target_yaw_change) + "]")
+        rospy.loginfo("Executing relative positional command [" + str(goal.goal.target_x_change) + ", " + str(goal.goal.target_yaw_change) + "]")
 
         if use_action:
-            pub.send_goal(goal)
+            pub.send_goal(goal.goal)
         else:
             pub.publish(goal)
 
@@ -37,14 +48,15 @@ def cb(joy_msg):
 
         slow = joy.is_down(deadman_slow)
         goal = RelativeMoveActionGoal()
-        goal.header.stamp = rospy.Time.now()
-        goal.target_yaw_change = joy.axes[axis_angular] * (ang_dist_slow if slow else ang_dist_fast)
-        goal.angular_speed = ang_vel_slow if slow else ang_vel_fast
+        goal.goal.header.stamp = rospy.Time.now()
+        goal.goal_id = generate_id()
+        goal.goal.target_yaw_change = joy.axes[axis_angular] * (ang_dist_slow if slow else ang_dist_fast)
+        goal.goal.angular_speed = ang_vel_slow if slow else ang_vel_fast
 
-        rospy.loginfo("Executing relative positional command [" + str(goal.target_x_change) + ", " + str(goal.target_yaw_change) + "]")
+        rospy.loginfo("Executing relative positional command [" + str(goal.goal.target_x_change) + ", " + str(goal.goal.target_yaw_change) + "]")
 
         if use_action:
-            pub.send_goal(goal)
+            pub.send_goal(goal.goal)
         else:
             pub.publish(goal)
 
