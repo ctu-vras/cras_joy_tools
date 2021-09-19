@@ -4,7 +4,7 @@ import rospy
 from actionlib.action_client import ActionClient
 from sensor_msgs.msg import Joy
 from cras_joy_tools.history_joystick import HistoryJoystick
-from relative_positional_controller.msg import RelativeMoveGoal, RelativeMoveAction
+from relative_positional_controller.msg import RelativeMoveActionGoal, RelativeMoveAction
 
 
 def cb(joy_msg):
@@ -17,7 +17,7 @@ def cb(joy_msg):
                 return
 
         slow = joy.is_down(deadman_slow)
-        goal = RelativeMoveGoal()
+        goal = RelativeMoveActionGoal()
         goal.header.stamp = rospy.Time.now()
         goal.target_x_change = joy.axes[axis_linear] * (lin_dist_slow if slow else lin_dist_fast)
         goal.linear_speed = lin_vel_slow if slow else lin_vel_fast
@@ -36,7 +36,7 @@ def cb(joy_msg):
                 return
 
         slow = joy.is_down(deadman_slow)
-        goal = RelativeMoveGoal()
+        goal = RelativeMoveActionGoal()
         goal.header.stamp = rospy.Time.now()
         goal.target_yaw_change = joy.axes[axis_angular] * (ang_dist_slow if slow else ang_dist_fast)
         goal.angular_speed = ang_vel_slow if slow else ang_vel_fast
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     if use_action:
         pub = ActionClient("position_controller", RelativeMoveAction)
     else:
-        pub = rospy.Publisher("~goal", RelativeMoveGoal, queue_size=1)
+        pub = rospy.Publisher("~goal", RelativeMoveActionGoal, queue_size=1)
 
     sub = rospy.Subscriber("~joy", Joy, cb, queue_size=10)
 
