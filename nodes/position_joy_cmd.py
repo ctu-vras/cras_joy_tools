@@ -18,6 +18,7 @@ def cb(joy_msg):
 
         slow = joy.is_down(deadman_slow)
         goal = RelativeMoveGoal()
+        goal.header.stamp = rospy.Time.now()
         goal.target_x_change = joy.axes[axis_linear] * (lin_dist_slow if slow else lin_dist_fast)
         goal.linear_speed = lin_vel_slow if slow else lin_vel_fast
 
@@ -36,6 +37,7 @@ def cb(joy_msg):
 
         slow = joy.is_down(deadman_slow)
         goal = RelativeMoveGoal()
+        goal.header.stamp = rospy.Time.now()
         goal.target_yaw_change = joy.axes[axis_angular] * (ang_dist_slow if slow else ang_dist_fast)
         goal.angular_speed = ang_vel_slow if slow else ang_vel_fast
 
