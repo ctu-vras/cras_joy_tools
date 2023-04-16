@@ -94,7 +94,7 @@ def find_config_for_device(device, base_path):
             for filename in [f for f in os.listdir(base_path) if f.endswith(".yaml")]:
                 config_file = os.path.join(base_path, filename)
                 with open(config_file, 'r') as f:
-                    conf = yaml.load(f)
+                    conf = yaml.safe_load(f)
                 device_ids = conf["device_ids"]
                 if device_id in device_ids:
                     return config_file
@@ -180,8 +180,8 @@ class JoyTranslator(object):
                         getattr(result, section)[item] = eval(self.config[section][item],
                                                               self.translation_vars)
                     except Exception:
-                        print "Evaluation of expression '%s' failed with exception:" % \
-                              self.config[section][item]
+                        print("Evaluation of expression '%s' failed with exception:" %
+                              self.config[section][item])
                         traceback.print_exc()
 
         # we implement our own deadzone config to be able to change it on the fly
@@ -221,7 +221,7 @@ if __name__ == '__main__':
                         try:
                             with open(config_file, 'r') as stream:
                                 try:
-                                    config = yaml.load(stream)
+                                    config = yaml.safe_load(stream)
                                     if config is not None:
                                         translator = JoyTranslator(config)
                                         rospy.loginfo(
