@@ -4,7 +4,10 @@ import rospy
 from actionlib.action_client import ActionClient, GoalID
 from sensor_msgs.msg import Joy
 from cras_joy_tools.history_joystick import HistoryJoystick
-from relative_positional_controller.msg import RelativeMoveActionGoal, RelativeMoveAction
+try:
+    from cras_relative_positional_controller.msg import RelativeMoveActionGoal, RelativeMoveAction
+except:
+    from relative_positional_controller.msg import RelativeMoveActionGoal, RelativeMoveAction
 
 
 g_goal_id = 0
