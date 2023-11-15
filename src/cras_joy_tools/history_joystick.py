@@ -1,6 +1,13 @@
-from sensor_msgs.msg import Joy
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
 
-"""Originally from nifti_teleop_joy"""
+"""
+Stateful gamepad/joystick library. It allows querying for button state changes, button combos etc.
+
+Originally implemented in nifti_teleop_joy.
+"""
+
+from sensor_msgs.msg import Joy
 
 
 class HistoryJoystick(Joy):
@@ -85,7 +92,7 @@ class HistoryJoystick(Joy):
             return False
 
     def was_down_all(self, button_ids):
-        """Check if all of given button were pressed down (state 1)."""
+        """Check if all given button were pressed down (state 1)."""
         try:
             res = True
             for button_id in button_ids:
@@ -119,14 +126,14 @@ class HistoryJoystick(Joy):
             for button_id in button_ids:
                 res = res or (self.buttons[button_id] and not self.old_buttons[button_id])
             return res
-        except (AttributeError, TypeError) as e:
+        except (AttributeError, TypeError):
             # not enough joystick messages yet?
             return False
 
     def pressed_button_combo(self, button_ids):
-        """Check if the given button combination has just been pressed (all buttons 1 and one of them just transitioned 0->1)"""
-        return self.is_down_all(button_ids) and not self.was_down_all(
-            button_ids) and self.pressed_any(button_ids)
+        """Check if the given button combination has just been pressed (
+        all buttons 1 and one of them just transitioned 0->1)"""
+        return self.is_down_all(button_ids) and not self.was_down_all(button_ids) and self.pressed_any(button_ids)
 
     def released(self, button_id):
         """Check if a given button has just been released (transition 1->0)."""
@@ -139,15 +146,15 @@ class HistoryJoystick(Joy):
             for button_id in button_ids:
                 res = res or (not self.buttons[button_id] and self.old_buttons[button_id])
             return res
-        except (AttributeError, TypeError) as e:
+        except (AttributeError, TypeError):
             # not enough joystick messages yet?
             return False
 
     def released_all(self, button_ids):
-        """Check if all of given buttons have just been released (transition 1->0)."""
+        """Check if all given buttons have just been released (transition 1->0)."""
         try:
             return not self.is_down_any(button_ids) and self.was_down_any(button_ids)
-        except (AttributeError, TypeError) as e:
+        except (AttributeError, TypeError):
             # not enough joystick messages yet?
             return False
 
@@ -162,16 +169,15 @@ class HistoryJoystick(Joy):
             for button_id in button_ids:
                 res = res or (self.buttons[button_id] != self.old_buttons[button_id])
             return res
-        except (TypeError, AttributeError) as e:
+        except (TypeError, AttributeError):
             # not enough joystick messages yet?
             return False
 
     def axis_moved(self, axis_id):
         """Check if a given axis has moved."""
         try:
-            return self.axes[axis_id] != \
-                   self.old_axes[axis_id]
-        except (TypeError, AttributeError) as e:
+            return self.axes[axis_id] != self.old_axes[axis_id]
+        except (TypeError, AttributeError):
             # no joystick messages yet?
             return False
 
@@ -179,9 +185,8 @@ class HistoryJoystick(Joy):
         """Check if a given axis that was released has moved (transition
         0->anything else)."""
         try:
-            return self.axes[axis_id] and \
-                   not self.old_axes[axis_id]
-        except (TypeError, AttributeError) as e:
+            return self.axes[axis_id] and not self.old_axes[axis_id]
+        except (TypeError, AttributeError):
             # no joystick messages yet?
             return False
 
@@ -189,8 +194,7 @@ class HistoryJoystick(Joy):
         """Check if a given axis has just been released has (transition anything
         else->0)."""
         try:
-            return not self.axes[axis_id] and \
-                   self.old_axes[axis_id]
-        except (TypeError, AttributeError) as e:
+            return not self.axes[axis_id] and self.old_axes[axis_id]
+        except (TypeError, AttributeError):
             # no joystick messages yet?
             return False

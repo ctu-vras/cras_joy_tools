@@ -1,12 +1,51 @@
 #!/usr/bin/env python
 
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+
+"""
+Send relative positional commands by pressing gamepad buttons. This command interface is expected to work with
+`cras_relative_positional_controller`.
+
+Subscribed topics:
+- `~joy` (:sensor_msgs:`Joy`): The input joystick.
+
+Published topics:
+- `~goal` (:cras_cras_relative_positional_controller:`RelativeMoveActionGoal`): Goal for the position controller.
+
+Used actions:
+- `position_controller` (:cras_cras_relative_positional_controller:`RelativeMoveAction`):
+    The relative positional controller.
+
+Parameters:
+- `~use_action` (bool, default True): If true, the action interface will be used. Otherwise, just the `~goal` will be
+                                      published.
+- `~lin_dist_slow` (double, default 0.1): The distance to drive in slow mode.
+- `~lin_dist_fast` (double, default 0.5): The distance to drive in fast mode.
+- `~lin_vel_slow` (double, default 0.1): Slow velocity.
+- `~lin_vel_fast` (double, default 0.3): Fast velocity.
+- `~ang_dist_slow` (double, default 0.4): The angular distance to drive in slow mode.
+- `~ang_dist_fast` (double, default 1.5): The angular distance to drive in fast mode.
+- `~ang_vel_slow` (double, default 0.4): Slow angular velocity.
+- `~ang_vel_fast` (double, default 0.8): Fast angular velocity.
+- `~deadman_slow` (int, default 1): Index of the deadman button that needs to be pressed to execute slow motion.
+- `~deadman_fast` (int, default 3): Index of the deadman button that needs to be pressed to execute fast motion.
+- `~axis_linear` (int, default 7): Index of the joystick axis that defines linear motion.
+- `~axis_angular` (int, default 6): Index of the joystick axis that defines the angular motion.
+"""
+
+
 import rospy
+
 from actionlib.action_client import ActionClient, GoalID
-from sensor_msgs.msg import Joy
 from cras_joy_tools.history_joystick import HistoryJoystick
+from sensor_msgs.msg import Joy
+
 try:
     from cras_relative_positional_controller.msg import RelativeMoveActionGoal, RelativeMoveAction
-except:
+except ImportError:
+    # Backwards compatibility before the package was renamed
     from relative_positional_controller.msg import RelativeMoveActionGoal, RelativeMoveAction
 
 
@@ -36,7 +75,8 @@ def cb(joy_msg):
         goal.goal.target_x_change = joy.axes[axis_linear] * (lin_dist_slow if slow else lin_dist_fast)
         goal.goal.linear_speed = lin_vel_slow if slow else lin_vel_fast
 
-        rospy.loginfo("Executing relative positional command [" + str(goal.goal.target_x_change) + ", " + str(goal.goal.target_yaw_change) + "]")
+        rospy.loginfo("Executing relative positional command [" +
+                      str(goal.goal.target_x_change) + ", " + str(goal.goal.target_yaw_change) + "]")
 
         if use_action:
             pub.send_goal(goal.goal)
@@ -56,7 +96,8 @@ def cb(joy_msg):
         goal.goal.target_yaw_change = joy.axes[axis_angular] * (ang_dist_slow if slow else ang_dist_fast)
         goal.goal.angular_speed = ang_vel_slow if slow else ang_vel_fast
 
-        rospy.loginfo("Executing relative positional command [" + str(goal.goal.target_x_change) + ", " + str(goal.goal.target_yaw_change) + "]")
+        rospy.loginfo("Executing relative positional command [" +
+                      str(goal.goal.target_x_change) + ", " + str(goal.goal.target_yaw_change) + "]")
 
         if use_action:
             pub.send_goal(goal.goal)

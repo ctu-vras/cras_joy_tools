@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!--
+SPDX-License-Identifier: BSD-3-Clause
+SPDX-FileCopyrightText: Czech Technical University in Prague
+-->
+
+<!--
+Launch joy_node and joy_translator.
+-->
+
+<launch>
+    <arg name="joy_namespace" default="" />
+    <arg name="transparent_translation" default="false"
+         doc="If true, the translated joy will be published on joy and the raw one on joy_raw. If false, translated goes to joy_translated and raw goes to joy" />
+
+    <!-- Arguments passed to joy_node as parameters. -->
+    <arg name="dev" default="/dev/input/js0" doc="The joystick device" />
+    <arg name="dev_ff" default="" doc="The force-feedback device (empty means try to autodetect)" />
+    <arg name="coalesce_interval" default="0.033" />
+    <arg name="deadzone" default="0.1" />
+    <arg name="autorepeat_rate" default="0.0" />
+
+    <!-- Other arguments. -->
+    <arg name="node_name" default="$(anon joy_node)" doc="Name of the joy node." />
+    <arg name="translator_node_name" default="$(arg node_name)_translator" doc="Name of the translator node." />
+
+    <group>
+        <arg name="raw_suffix" value="_raw" if="$(arg transparent_translation)" />
+        <arg name="translated_suffix" value="" if="$(arg transparent_translation)" />
+
+        <arg name="raw_suffix" value="" unless="$(arg transparent_translation)" />
+        <arg name="translated_suffix" value="_translated" unless="$(arg transparent_translation)" />
+
+        <remap from="joy" to="joy$(arg raw_suffix)"/>
+        <remap from="joy_translated" to="joy$(arg translated_suffix)" />
+
+        <node pkg="joy" type="joy_node" name="$(arg node_name)" respawn="true">
+            <param name="dev" value="$(arg dev)" />
+            <param name="dev_ff" value="$(arg dev_ff)" />
+            <param name="autorepeat_rate" value="$(arg autorepeat_rate)" />
+            <param name="deadzone" type="double" value="0.0" />  <!-- Deadzone is handled by translator. -->
+            <param name="coalesce_interval" type="double" value="$(arg coalesce_interval)" />
+            <param name="default_trig_val" type="bool" value="true" />  <!-- Read trigger values instead of publishing wrongly zeros. -->
+        </node>
+        <node pkg="cras_joy_tools" type="joy_translator.py" name="$(arg translator_node_name)" respawn="true">
+            <param name="dev" value="$(arg dev)"/>
+            <param name="deadzone" type="double" value="$(arg deadzone)" />
+        </node>
+    </group>
+
+</launch>
+

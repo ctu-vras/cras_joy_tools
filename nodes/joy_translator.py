@@ -1,9 +1,14 @@
 #!/usr/bin/env python
+
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
 import os
 import re
-from socket import gaierror
 import traceback
 import yaml
+
+from socket import gaierror
 
 import rospy
 from rospkg import RosPack
@@ -99,12 +104,11 @@ def find_config_for_device(device, base_path):
                 if device_id in device_ids:
                     return config_file
 
-            vendor_product_config_file = os.path.join(base_path,
-                                                      "%s:%s.yaml" % device_vendor_product)
+            vendor_product_config_file = os.path.join(base_path, "%s:%s.yaml" % device_vendor_product)
             if os.path.exists(vendor_product_config_file):
                 return vendor_product_config_file
 
-            rospy.logerr("Couldn't find config file by vendor and product for device %s." % device)
+            rospy.logerr("Couldn't find config file by vendor:product %s for device %s." % (device_id, device))
             return None
 
 
@@ -122,7 +126,7 @@ def joy_cb(joy):
 
 
 class JoyTranslator(object):
-    def __init__(self, config):
+    def __init__(self, config, default_deadzone):
         self.config = config
 
         self.translation_vars = {
@@ -136,9 +140,9 @@ class JoyTranslator(object):
         if 'init' in self.config.keys():
             for section in self.config['init'].keys():
                 rospy.loginfo("Initializing section %s" % section)
-                exec (self.config['init'][section], self.translation_vars)
+                exec(self.config['init'][section], self.translation_vars)
 
-        self.deadzone = 0.05
+        self.deadzone = default_deadzone
         if "deadzone" in config.keys():
             self.deadzone = float(config["deadzone"])
 
@@ -166,22 +170,20 @@ class JoyTranslator(object):
         if 'callbacks' in self.config.keys():
             for section in self.config['callbacks'].keys():
                 rospy.logdebug("Calling callback %s" % section)
-                exec (self.config['callbacks'][section], self.translation_vars)
+                exec(self.config['callbacks'][section], self.translation_vars)
 
         result = Joy()
         result.header = joy.header
-        result.axes = [0.] * 8
-        result.buttons = [0] * 12
+        result.axes = [0.] * len(config['axes'])
+        result.buttons = [0] * len(config['buttons'])
 
         for section in ('buttons', 'axes'):
             if section in self.config.keys():
                 for item in self.config[section].keys():
                     try:
-                        getattr(result, section)[item] = eval(self.config[section][item],
-                                                              self.translation_vars)
+                        getattr(result, section)[item] = eval(self.config[section][item], self.translation_vars)
                     except Exception:
-                        print("Evaluation of expression '%s' failed with exception:" %
-                              self.config[section][item])
+                        print("Evaluation of expression '%s' failed with exception:" % (self.config[section][item],))
                         traceback.print_exc()
 
         # we implement our own deadzone config to be able to change it on the fly
@@ -196,10 +198,22 @@ if __name__ == '__main__':
     try:
         rospy.init_node('joy_translator')
 
+        # Workaround for https://github.com/ros/ros_comm/issues/2175 to prevent remapping cycles.
+        orig_init = rospy.topics._TopicImpl.__init__
+
+        def new_init(self, name, dataclass):
+            orig_init(self, name, dataclass)
+            self.name = self.resolved_name = name
+
+        rospy.topics._TopicImpl.__init__ = new_init
+
         joy_publisher = rospy.Publisher("joy_translated", Joy, queue_size=10)
         joy_subscriber = rospy.Subscriber("joy", Joy, joy_cb, queue_size=10)
-        default_base_path = os.path.join(RosPack().get_path("cras_joy_tools"), "joy_mappings", "tradr")
+        rospy.loginfo("%s %s" % (joy_publisher.resolved_name, joy_subscriber.resolved_name))
+        print(rospy.names.get_resolved_mappings())
+        default_base_path = os.path.join(RosPack().get_path("cras_joy_tools"), "joy_mappings")
         config_base_path = rospy.get_param("~config_base_path", default_base_path)
+        default_deadzone = rospy.get_param("~deadzone", 0.05)
 
         # this loop constantly checks for the joystick, and if it starts being present, the translator searches for a
         # suitable config and starts translating; this allows to exchange joystick types without restarting the
@@ -223,17 +237,14 @@ if __name__ == '__main__':
                                 try:
                                     config = yaml.safe_load(stream)
                                     if config is not None:
-                                        translator = JoyTranslator(config)
+                                        translator = JoyTranslator(config, default_deadzone)
                                         rospy.loginfo(
-                                            "Started translating joystick %s configured by %s" % (
-                                            device, config_file))
+                                            "Started translating joystick %s configured by %s" % (device, config_file))
                                 except yaml.YAMLError as e:
-                                    rospy.logerr("Failed parsing config %s for device %s" % (
-                                    config_file, device))
+                                    rospy.logerr("Failed parsing config %s for device %s" % (config_file, device))
                                     traceback.print_exc()
                         except IOError as e:
-                            rospy.logerr(
-                                "Failed reading config %s for device %s" % (config_file, device))
+                            rospy.logerr("Failed reading config %s for device %s" % (config_file, device))
                             traceback.print_exc()
                     else:
                         rospy.logerr("No config found for device %s" % device)
