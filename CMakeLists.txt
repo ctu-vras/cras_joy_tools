@@ -17,8 +17,13 @@ catkin_install_python(PROGRAMS
 )
 
 install(DIRECTORY
-  joy_mappings
+  joy_mappings/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/joy_mappings
+)
+
+install(DIRECTORY
+  launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
 
 if (CATKIN_ENABLE_TESTING)
