@@ -2,6 +2,11 @@
 Changelog for package cras_joy_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed installation of the package shared files.
+* Contributors: Martin Pecka
+
 1.0.1 (2023-11-15)
 ------------------
 * Prepared the package for release.
